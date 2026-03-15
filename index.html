@@ -1018,41 +1018,58 @@ function filterMethod(method, btn) {
 }
 
 // ── FORMS ──
+const API_BASE = 'https://tokenstree.com/api/v1';
+
+async function _submitFeedback(payload, okId, fields) {
+  const ok  = document.getElementById(okId + '-ok');
+  const err = document.getElementById(okId + '-err');
+  ok.classList.remove('show'); err.classList.remove('show');
+  try {
+    const resp = await fetch(API_BASE + '/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    ok.classList.add('show');
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  } catch (e) {
+    err.textContent = '⚠️ Error al enviar. Inténtalo de nuevo.';
+    err.classList.add('show');
+  }
+}
+
 function submitIdea() {
   const title = document.getElementById('idea-title').value.trim();
   const desc  = document.getElementById('idea-desc').value.trim();
-  const ok    = document.getElementById('idea-ok');
   const err   = document.getElementById('idea-err');
-  ok.classList.remove('show'); err.classList.remove('show');
-  if (!title || !desc) { err.classList.add('show'); return; }
-  // In production: replace with your real endpoint or GitHub API call
+  err.classList.remove('show');
+  if (!title || !desc) { err.textContent = '⚠️ Rellena el título y la descripción.'; err.classList.add('show'); return; }
   const type  = document.getElementById('idea-type').value;
   const email = document.getElementById('idea-email').value.trim();
-  console.log('IDEA SUBMITTED:', { title, type, desc, email });
-  ok.classList.add('show');
-  document.getElementById('idea-title').value = '';
-  document.getElementById('idea-desc').value  = '';
-  document.getElementById('idea-email').value = '';
-  document.getElementById('idea-type').value  = '';
+  _submitFeedback(
+    { type: 'idea', title, body: (type ? '[' + type + '] ' : '') + desc, email, page: window.location.href },
+    'idea',
+    ['idea-title', 'idea-desc', 'idea-email', 'idea-type']
+  );
 }
 
 function submitBug() {
   const title    = document.getElementById('bug-title').value.trim();
   const desc     = document.getElementById('bug-desc').value.trim();
-  const ok       = document.getElementById('bug-ok');
   const err      = document.getElementById('bug-err');
-  ok.classList.remove('show'); err.classList.remove('show');
-  if (!title || !desc) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  if (!title || !desc) { err.textContent = '⚠️ Rellena el título y la descripción.'; err.classList.add('show'); return; }
   const severity = document.getElementById('bug-severity').value;
   const endpoint = document.getElementById('bug-endpoint').value.trim();
   const email    = document.getElementById('bug-email').value.trim();
-  console.log('BUG SUBMITTED:', { title, severity, endpoint, desc, email });
-  ok.classList.add('show');
-  document.getElementById('bug-title').value    = '';
-  document.getElementById('bug-desc').value     = '';
-  document.getElementById('bug-endpoint').value = '';
-  document.getElementById('bug-email').value    = '';
-  document.getElementById('bug-severity').value = '';
+  const body     = (severity ? 'Severidad: ' + severity + '\n' : '') +
+                   (endpoint ? 'Endpoint: ' + endpoint + '\n\n' : '') + desc;
+  _submitFeedback(
+    { type: 'bug', title, body, email, page: window.location.href },
+    'bug',
+    ['bug-title', 'bug-desc', 'bug-endpoint', 'bug-email', 'bug-severity']
+  );
 }
 
 // ── OPEN FIRST GROUP BY DEFAULT ──
